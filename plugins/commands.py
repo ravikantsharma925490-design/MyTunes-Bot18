@@ -20,15 +20,15 @@ from database.users_chats_db import db
 from info import *
 from utils import get_settings, save_group_settings, is_subscribed, is_req_subscribed, get_size, get_shortlink, is_check_admin, temp, get_readable_time, get_time, generate_settings_text, log_error, clean_filename
 import time
-
-
+ 
+ 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
-
+ 
 TIMEZONE = "Asia/Kolkata"
 BATCH_FILES = {}
-
-
+ 
+ 
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client, message):
     if EMOJI_MODE:
@@ -39,24 +39,24 @@ async def start(client, message):
             )
         except Exception:
             await message.react(emoji="⚡️", big=True)
-
+ 
     m = message
-
+ 
     if len(m.command) == 2 and m.command[1].startswith(('notcopy', 'sendall')):
         _, userid, verify_id, file_id = m.command[1].split("_", 3)
         user_id = int(userid)
         grp_id = temp.VERIFICATIONS.get(user_id, 0)
         settings = await get_settings(grp_id)
-
+ 
         verify_id_info = await db.get_verify_id_info(user_id, verify_id)
-
+ 
         if not verify_id_info or verify_id_info["verified"]:
             return await message.reply(
                 "<b>ʟɪɴᴋ ᴇxᴘɪʀᴇᴅ ᴛʀʏ ᴀɢᴀɪɴ...</b>"
             )
-
+ 
         ist_timezone = pytz.timezone('Asia/Kolkata')
-
+ 
         if await db.user_verified(user_id):
             key = "third_time_verified"
         else:
@@ -65,25 +65,25 @@ async def start(client, message):
                 if await db.is_user_verified(user_id)
                 else "last_verified"
             )
-
+ 
         current_time = datetime.now(tz=ist_timezone)
-
+ 
         result = await db.update_notcopy_user(
             user_id,
             {key: current_time}
         )
-
+ 
         await db.update_verify_id_info(
             user_id,
             verify_id,
             {"verified": True}
         )
-
+ 
         if key == "third_time_verified":
             num = 3
         else:
             num = 2 if key == "second_time_verified" else 1
-
+ 
         if key == "third_time_verified":
             msg = script.THIRDT_VERIFY_COMPLETE_TEXT
         else:
@@ -92,7 +92,7 @@ async def start(client, message):
                 if key == "second_time_verified"
                 else script.VERIFY_COMPLETE_TEXT
             )
-
+ 
         if message.command[1].startswith('sendall'):
             verifiedfiles = (
                 f"https://telegram.me/{temp.U_NAME}"
@@ -103,7 +103,7 @@ async def start(client, message):
                 f"https://telegram.me/{temp.U_NAME}"
                 f"?start=file_{grp_id}_{file_id}"
             )
-
+ 
         await client.send_message(
             settings['log'],
             script.VERIFIED_LOG_TEXT.format(
@@ -115,16 +115,16 @@ async def start(client, message):
                 num
             )
         )
-
+ 
         btn = [[
             InlineKeyboardButton(
                 "✅ ᴄʟɪᴄᴋ ʜᴇʀᴇ ᴛᴏ ɢᴇᴛ ꜰɪʟᴇ ✅",
                 url=verifiedfiles
             )
         ]]
-
+ 
         reply_markup = InlineKeyboardMarkup(btn)
-
+ 
         dlt = await m.reply_photo(
             photo=VERIFY_IMG,
             caption=msg.format(
@@ -134,11 +134,11 @@ async def start(client, message):
             reply_markup=reply_markup,
             parse_mode=enums.ParseMode.HTML
         )
-
+ 
         await asyncio.sleep(300)
         await dlt.delete()
         return
-
+ 
     if message.chat.type in [
         enums.ChatType.GROUP,
         enums.ChatType.SUPERGROUP
@@ -154,9 +154,9 @@ async def start(client, message):
                 url=UPDATE_CHNL_LNK
             )
         ]]
-
+ 
         reply_markup = InlineKeyboardMarkup(buttons)
-
+ 
         await message.reply(
             script.GSTART_TXT.format(
                 message.from_user.mention
@@ -168,12 +168,12 @@ async def start(client, message):
             reply_markup=reply_markup,
             disable_web_page_preview=True
         )
-
+ 
         await asyncio.sleep(2)
-
+ 
         if not await db.get_chat(message.chat.id):
             total = await client.get_chat_members_count(message.chat.id)
-
+ 
             await client.send_message(
                 LOG_CHANNEL,
                 script.LOG_TEXT_G.format(
@@ -183,20 +183,20 @@ async def start(client, message):
                     "Unknown"
                 )
             )
-
+ 
             await db.add_chat(
                 message.chat.id,
                 message.chat.title
             )
-
+ 
         return
-
+ 
     if not await db.is_user_exist(message.from_user.id):
         await db.add_user(
             message.from_user.id,
             message.from_user.first_name
         )
-
+ 
         await client.send_message(
             LOG_CHANNEL,
             script.LOG_TEXT_P.format(
@@ -204,7 +204,7 @@ async def start(client, message):
                 message.from_user.mention
             )
         )
-
+ 
     if len(message.command) != 2:
         buttons = [[
             InlineKeyboardButton(
@@ -239,7 +239,7 @@ async def start(client, message):
                 callback_data="premium_info"
             )
         ]]
-
+ 
         reply_markup = InlineKeyboardMarkup(buttons)
         current_time = datetime.now(pytz.timezone(TIMEZONE))
         curr_time = current_time.hour        
@@ -261,7 +261,7 @@ async def start(client, message):
             parse_mode=enums.ParseMode.HTML
         )
         return
-
+ 
     if len(message.command) == 2 and message.command[1] in ["subscribe", "error", "okay", "help"]:
         buttons = [[
                     InlineKeyboardButton('🔰 ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🔰', url=f'http://t.me/{temp.U_NAME}?startgroup=true')
@@ -363,17 +363,17 @@ async def start(client, message):
         grp_id = int(grp_id)
     except:
         _, grp_id, file_id = "", 0, data
-
+ 
     # Fetch file details concurrently with user checks
     file_details_task = asyncio.create_task(get_file_details(file_id))
-
+ 
     if not await db.has_premium_access(message.from_user.id): 
         try:
             btn = []
             chat = int(data.split("_", 2)[1])
             settings      = await get_settings(chat)
             fsub_channels = list(dict.fromkeys((settings.get('fsub', []) if settings else [])+ AUTH_CHANNELS + AUTH_GROUPS)) 
-
+ 
             if fsub_channels:
                 btn += await is_subscribed(client, message.from_user.id, fsub_channels)
             if AUTH_REQ_CHANNELS:
@@ -398,11 +398,11 @@ async def start(client, message):
                     parse_mode=enums.ParseMode.HTML
                 )
                 return
-
+ 
         except Exception as e:
             await log_error(client, f"❗️ Force Sub Error:\n\n{repr(e)}")
             logger.error(f"❗️ Force Sub Error:\n\n{repr(e)}")
-
+ 
     user_id = m.from_user.id
     if not await db.has_premium_access(user_id):
         try:
@@ -446,10 +446,10 @@ async def start(client, message):
         except Exception as e:
             print(f"Error In Verification - {e}")
             pass
-
+ 
     # Now, await the file details task
     files_ = await file_details_task
-
+ 
     if data.startswith("allfiles"):
         try:
             files = temp.GETALL.get(file_id)
@@ -513,7 +513,7 @@ async def start(client, message):
         except Exception as e:
             logger.exception(e)
             return
-
+ 
     user = message.from_user.id
     settings = await get_settings(int(grp_id))
     if not files_:
@@ -543,7 +543,7 @@ async def start(client, message):
                 file_id=file_id,
                 protect_content=settings.get('file_secure', PROTECT_CONTENT),
                 reply_markup=InlineKeyboardMarkup(btn))
-
+ 
             filetype = msg.media
             file = getattr(msg, filetype.value)
             title = clean_filename(file.file_name)
@@ -584,7 +584,7 @@ async def start(client, message):
         except Exception as e:
             logger.exception(e)
             f_caption = f_caption
-
+ 
     if f_caption is None:
         f_caption = clean_filename(files.file_name)
     
@@ -620,7 +620,7 @@ async def start(client, message):
     await msg.delete()
     await k.edit_text("<b>ʏᴏᴜʀ ᴠɪᴅᴇᴏ / ꜰɪʟᴇ ɪꜱ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ !!</b>")
     return
-
+ 
 @Client.on_message(filters.command('logs') & filters.user(ADMINS))
 async def log_file(bot, message):
     """Send log file"""
@@ -628,7 +628,7 @@ async def log_file(bot, message):
         await message.reply_document('DreamXlogs.txt', caption="📑 **ʟᴏɢꜱ**")
     except Exception as e:
         await message.reply(str(e))
-
+ 
 @Client.on_message(filters.command('delete') & filters.user(ADMINS))
 async def delete(bot, message):
     """Delete file from database"""
@@ -638,7 +638,7 @@ async def delete(bot, message):
     else:
         await message.reply('Rᴇᴘʟʏ ᴛᴏ ғɪʟᴇ ᴡɪᴛʜ /delete ᴡʜɪᴄʜ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ ᴅᴇʟᴇᴛᴇ', quote=True)
         return
-
+ 
     for file_type in ("document", "video", "audio"):
         media = getattr(reply, file_type, None)
         if media is not None:
@@ -693,8 +693,8 @@ async def delete(bot, message):
                         await msg.edit('Fɪʟᴇ ɪs sᴜᴄᴄᴇssғᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ ғʀᴏᴍ ᴅᴀᴛᴀʙᴀsᴇ ✅')
                     else:
                         await msg.edit('Fɪʟᴇ ɴᴏᴛ ғᴏᴜɴᴅ ɪɴ ᴅᴀᴛᴀʙᴀsᴇ ❌')
-
-
+ 
+ 
 @Client.on_message(filters.command('deleteall') & filters.user(ADMINS))
 async def delete_all_index(bot, message):
     await message.reply_text(
@@ -715,7 +715,7 @@ async def delete_all_index(bot, message):
         ),
         quote=True,
     )
-
+ 
 @Client.on_message(filters.command('settings'))
 async def settings(client, message):
     user_id = message.from_user.id if message.from_user else None
@@ -757,7 +757,7 @@ async def settings(client, message):
                     "ᴜꜱᴇ /reload ɪɴ ᴛʜᴀᴛ ɢʀᴏᴜᴘ ᴀɴᴅ ɪᴛ ᴡɪʟʟ ᴀᴘᴘᴇᴀʀ ʜᴇʀᴇ.",
                     reply_markup=InlineKeyboardMarkup(group_list)
                 )
-
+ 
 @Client.on_message(filters.command('reload'))
 async def connect_group(client, message):
     user_id = message.from_user.id
@@ -778,17 +778,17 @@ async def connect_group(client, message):
             await message.reply_text(f"Lɪɴᴋᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ ✅ {chat.title} ᴛᴏ PM.")
         except:
             await message.reply_text("Invalid group ID or error occurred.")
-
+ 
 @Client.on_message(filters.command('set_template'))
 async def save_template(client, message):
     sts = await message.reply("ᴄʜᴇᴄᴋɪɴɢ ᴛᴇᴍᴘʟᴀᴛᴇ...")
     user_id = message.from_user.id if message.from_user else None
     if not user_id:
         return await message.reply("ʏᴏᴜ'ʀᴇ ᴀɴᴏɴʏᴍᴏᴜꜱ ᴀᴅᴍɪɴ.")
-
+ 
     if message.chat.type not in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
         return await sts.edit("⚠️ ᴜꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ɪɴ ᴀ ɢʀᴏᴜᴘ ᴄʜᴀᴛ.")
-
+ 
     group_id = message.chat.id
     title = message.chat.title
     if not await is_check_admin(client, group_id, user_id):
@@ -796,14 +796,14 @@ async def save_template(client, message):
         return
     if len(message.command) < 2:
         return await sts.edit("⚠️ ɴᴏ ᴛᴇᴍᴘʟᴀᴛᴇ ᴘʀᴏᴠɪᴅᴇᴅ!")
-
+ 
     template = message.text.split(" ", 1)[1]
     await save_group_settings(group_id, 'template', template)
     await sts.edit(
         f"✅ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴜᴘᴅᴀᴛᴇᴅ ᴛᴇᴍᴘʟᴀᴛᴇ ꜰᴏʀ <code>{title}</code> ᴛᴏ:\n\n{template}"
     )
-
-
+ 
+ 
 # Must add REQST_CHANNEL and SUPPORT_CHAT_ID to use this feature
 @Client.on_message((filters.command(["request", "Request"]) | filters.regex("#request") | filters.regex("#Request")) & filters.group)
 async def requests(bot, message):
@@ -922,7 +922,7 @@ async def requests(bot, message):
                 InlineKeyboardButton('ᴠɪᴇᴡ ʀᴇǫᴜᴇꜱᴛ', url=f"{reported_post.link}")
               ]]
         await message.reply_text("<b>ʏᴏᴜʀ ʀᴇǫᴜᴇꜱᴛ ʜᴀꜱ ʙᴇᴇɴ ᴀᴅᴅᴇᴅ! ᴘʟᴇᴀꜱᴇ ᴡᴀɪᴛ ꜰᴏʀ ꜱᴏᴍᴇ ᴛɪᴍᴇ.\n\nᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ ꜰɪʀꜱᴛ & ᴠɪᴇᴡ ʀᴇǫᴜᴇꜱᴛ.</b>", reply_markup=InlineKeyboardMarkup(btn))
-
+ 
 @Client.on_message(filters.command("send") & filters.user(ADMINS))
 async def send_msg(bot, message):
     if message.reply_to_message:
@@ -948,7 +948,7 @@ async def send_msg(bot, message):
             await message.reply_text(f"<b>Error: {e}</b>")
     else:
         await message.reply_text("<b>ᴜꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ ᴀꜱ ᴀ ʀᴇᴘʟʏ ᴛᴏ ᴀɴʏ ᴍᴇꜱꜱᴀɢᴇ ᴜꜱɪɴɢ ᴛʜᴇ ᴛᴀʀɢᴇᴛ ᴄʜᴀᴛ ɪᴅ. ꜰᴏʀ ᴇɢ:  /send ᴜꜱᴇʀɪᴅ</b>")
-
+ 
 @Client.on_message(filters.command("deletefiles") & filters.user(ADMINS))
 async def deletemultiplefiles(bot, message):
     chat_type = message.chat.type
@@ -979,13 +979,13 @@ async def deletemultiplefiles(bot, message):
         reply_markup=InlineKeyboardMarkup(btn),
         parse_mode=enums.ParseMode.HTML
     )
-
-
+ 
+ 
 @Client.on_callback_query(filters.regex("topsearch"))
 async def topsearch_callback(client, callback_query):
     def is_alphanumeric(string):
         return bool(re.match('^[a-zA-Z0-9 ]*$', string))
-
+ 
     limit = 20
     top_messages = await mdb.get_top_messages(limit)
     seen_messages = set()
@@ -1010,7 +1010,7 @@ async def topsearch_callback(client, callback_query):
         reply_markup=reply_markup
     )
     await callback_query.answer()
-
+ 
 @Client.on_message(filters.command('top_search'))
 async def top(_, message):
     def is_alphanumeric(string):
@@ -1041,7 +1041,7 @@ async def top(_, message):
         "<b>Tᴏᴘ Sᴇᴀʀᴄʜᴇs Oғ Tʜᴇ Dᴀʏ 👇</b>",
         reply_markup=reply_markup
     )
-
+ 
 @Client.on_message(filters.command('trendlist'))
 async def trendlist(client, message):
     def is_alphanumeric(string):
@@ -1060,19 +1060,19 @@ async def trendlist(client, message):
     except Exception as e:
         await message.reply_text(f"Error retrieving messages: {str(e)}")
         return
-
+ 
     if not top_messages:
         await message.reply_text("No top messages found.")
         return
     seen_messages = set()
     truncated_messages = []
-
+ 
     for msg in top_messages:
         msg_lower = msg.lower()
         if msg_lower not in seen_messages and is_alphanumeric(msg):
             seen_messages.add(msg_lower)
             truncated_messages.append(msg[:32] + '...' if len(msg) > 35 else msg)
-
+ 
     if not truncated_messages:
         await message.reply_text("No valid top messages found.")
         return
@@ -1085,7 +1085,7 @@ async def trendlist(client, message):
     formatted_list += f"\n\n{additional_message}"
     reply_text = f"<b>Top {len(truncated_messages)} Tʀᴀɴᴅɪɴɢ ᴏғ ᴛʜᴇ ᴅᴀʏ 👇:</b>\n\n{formatted_list}"
     await message.reply_text(reply_text)
-
+ 
 @Client.on_message(filters.private & filters.command("pm_search") & filters.user(ADMINS))
 async def set_pm_search(client, message):
     bot_id = client.me.id
@@ -1105,7 +1105,7 @@ async def set_pm_search(client, message):
     except Exception as e:
         logger.error(f"Error in set_pm_search: {e}")
         await message.reply_text(f"<b>❗ An error occurred: {e}</b>")
-
+ 
 @Client.on_message(filters.private & filters.command("movie_update") & filters.user(ADMINS))
 async def set_movie_update_notification(client, message):
     bot_id = client.me.id
@@ -1125,14 +1125,14 @@ async def set_movie_update_notification(client, message):
     except Exception as e:
         logger.error(f"Error in set_movie_update_notification: {e}")
         await message.reply_text(f"<b>❗ An error occurred: {e}</b>")
-
+ 
 @Client.on_message(filters.command("restart") & filters.user(ADMINS))
 async def stop_button(bot, message):
     msg = await bot.send_message(text="<b><i>ʙᴏᴛ ɪꜱ ʀᴇꜱᴛᴀʀᴛɪɴɢ</i></b>", chat_id=message.chat.id)
     await asyncio.sleep(3)
     await msg.edit("<b><i><u>ʙᴏᴛ ɪꜱ ʀᴇꜱᴛᴀʀᴛᴇᴅ</u> ✅</i></b>")
     os.execl(sys.executable, sys.executable, *sys.argv)
-
+ 
 @Client.on_message(filters.command("del_msg") & filters.user(ADMINS))
 async def del_msg(client, message):
     confirm_markup = InlineKeyboardMarkup([[
@@ -1148,7 +1148,7 @@ async def del_msg(client, message):
         await sent_message.delete()
     except Exception as e:
         print(f"Error deleting the message: {e}")
-
+ 
 @Client.on_callback_query(filters.regex('^confirm_del_'))
 async def confirmation_handler(client, callback_query):
     action = callback_query.data.split("_")[-1]
@@ -1158,7 +1158,7 @@ async def confirmation_handler(client, callback_query):
     elif action == "no":
         await callback_query.message.delete()
     await callback_query.answer()
-
+ 
 @Client.on_message(filters.command('set_caption'))
 async def save_caption(client, message):
     grp_id = message.chat.id
@@ -1176,8 +1176,8 @@ async def save_caption(client, message):
     await save_group_settings(grp_id, 'caption', caption)
     await message.reply_text(f"ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ᴄʜᴀɴɢᴇᴅ ᴄᴀᴘᴛɪᴏɴ ꜰᴏʀ {title}\n\nᴄᴀᴘᴛɪᴏɴ - {caption}", disable_web_page_preview=True)
     await client.send_message(LOG_API_CHANNEL, f"#Set_Caption\n\nɢʀᴏᴜᴘ ɴᴀᴍᴇ : {title}\n\nɢʀᴏᴜᴘ ɪᴅ: {grp_id}\nɪɴᴠɪᴛᴇ ʟɪɴᴋ : {invite_link}\n\nᴜᴘᴅᴀᴛᴇᴅ ʙʏ : {message.from_user.username}")
-
-
+ 
+ 
 @Client.on_message(filters.command(["set_tutorial", "set_tutorial_2", "set_tutorial_3"]))
 async def set_tutorial(client, message: Message):
     grp_id = message.chat.id
@@ -1189,7 +1189,7 @@ async def set_tutorial(client, message: Message):
         )
     if not await is_check_admin(client, grp_id, message.from_user.id):
         return await message.reply_text(script.NT_ADMIN_ALRT_TXT)
-
+ 
     try:
         tutorial_link = message.text.split(" ", 1)[1]
     except IndexError:
@@ -1201,7 +1201,7 @@ async def set_tutorial(client, message: Message):
         tutorial_key = "tutorial"
     else:
         tutorial_key = f"tutorial_{message.command[0].split('_', 2)[2]}"
-
+ 
     await save_group_settings(grp_id, tutorial_key, tutorial_link)
     invite_link = await client.export_chat_invite_link(grp_id)
     await message.reply_text(
@@ -1217,8 +1217,8 @@ async def set_tutorial(client, message: Message):
         f"ɪɴᴠɪᴛᴇ ʟɪɴᴋ : {invite_link}\n"
         f"ᴜᴘᴅᴀᴛᴇᴅ ʙʏ : {message.from_user.mention()}"
     )
-
-
+ 
+ 
 async def handle_shortner_command(c, m, shortner_key, api_key, log_prefix, fallback_url, fallback_api):
     grp_id = m.chat.id
     if not await is_check_admin(c, grp_id, m.from_user.id):
@@ -1258,19 +1258,19 @@ async def handle_shortner_command(c, m, shortner_key, api_key, log_prefix, fallb
             f"ʟɪᴋᴇ:\n\n`/{m.command[0]} mdiskshortner.link your_api_key_here`\n\n"
             f"💔 ᴇʀʀᴏʀ - <code>{e}</code></b>"
         )
-
+ 
 @Client.on_message(filters.command('set_shortner'))
 async def set_shortner(c, m):
     await handle_shortner_command(c, m, 'shortner', 'api', 'New_Shortner_Set_For_1st_Verify', SHORTENER_WEBSITE, SHORTENER_API)
-
+ 
 @Client.on_message(filters.command('set_shortner_2'))
 async def set_shortner_2(c, m):
     await handle_shortner_command(c, m, 'shortner_two', 'api_two', 'New_Shortner_Set_For_2nd_Verify', SHORTENER_WEBSITE2, SHORTENER_API2)
-
+ 
 @Client.on_message(filters.command('set_shortner_3'))
 async def set_shortner_3(c, m):
     await handle_shortner_command(c, m, 'shortner_three', 'api_three', 'New_Shortner_Set_For_3rd_Verify', SHORTENER_WEBSITE3, SHORTENER_API3)
-
+ 
 @Client.on_message(filters.command('set_log_channel'))
 async def set_log(client, message):
     grp_id = message.chat.id
@@ -1306,8 +1306,8 @@ async def set_log(client, message):
     grp_link = f"[{message.chat.title}]({link})"
     log_message = f"#New_Log_Channel_Set\n\nɴᴀᴍᴇ - {user_info}\n\nɪᴅ - `{user_id}`\n\nʟᴏɢ ᴄʜᴀɴɴᴇʟ ɪᴅ - `{log}`\nɢʀᴏᴜᴘ ʟɪɴᴋ - `{grp_link}`\n\nɢʀᴏᴜᴘ ɪᴅ : `{grp_id}`"
     await client.send_message(LOG_API_CHANNEL, log_message, disable_web_page_preview=True) 
-
-
+ 
+ 
 @Client.on_message(filters.command('set_time'))
 async def set_time(client, message):
     chat_type = message.chat.type
@@ -1325,7 +1325,7 @@ async def set_time(client, message):
     await save_group_settings(grp_id, 'verify_time', time)
     await message.reply_text(f"<b>✅️ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ꜱᴇᴛ 2ɴᴅ ᴠᴇʀɪꜰʏ ᴛɪᴍᴇ ꜰᴏʀ {title}\n\nᴛɪᴍᴇ - <code>{time}</code></b>")
     await client.send_message(LOG_API_CHANNEL, f"#Set_2nd_Verify_Time\n\nɢʀᴏᴜᴘ ɴᴀᴍᴇ : {title}\n\nɢʀᴏᴜᴘ ɪᴅ : {grp_id}\n\nɪɴᴠɪᴛᴇ ʟɪɴᴋ : {invite_link}\n\nᴜᴘᴅᴀᴛᴇᴅ ʙʏ : {message.from_user.username}")
-
+ 
 @Client.on_message(filters.command('set_time_2'))
 async def set_time_2(client, message):
     chat_type = message.chat.type
@@ -1343,8 +1343,8 @@ async def set_time_2(client, message):
     await save_group_settings(grp_id, 'third_verify_time', time)
     await message.reply_text(f"<b>✅️ ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ꜱᴇᴛ 3ʀᴅ ᴠᴇʀɪꜰʏ ᴛɪᴍᴇ ꜰᴏʀ {title}\n\nᴛɪᴍᴇ - <code>{time}</code></b>")
     await client.send_message(LOG_API_CHANNEL, f"#Set_3rd_Verify_Time\n\nɢʀᴏᴜᴘ ɴᴀᴍᴇ : {title}\n\nɢʀᴏᴜᴘ ɪᴅ : {grp_id}\n\nɪɴᴠɪᴛᴇ ʟɪɴᴋ : {invite_link}\n\nᴜᴘᴅᴀᴛᴇᴅ ʙʏ : {message.from_user.username}")
-
-
+ 
+ 
 @Client.on_message(filters.command('details'))
 async def all_settings(client, message):
     if message.chat.type not in [enums.ChatType.GROUP, enums.ChatType.SUPERGROUP]:
@@ -1365,7 +1365,7 @@ async def all_settings(client, message):
     dlt = await message.reply_text(text, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
     await asyncio.sleep(300)
     await dlt.delete()
-
+ 
 @Client.on_callback_query(filters.regex(r"^reset_group_(\-\d+)$"))
 async def reset_group_callback(client, callback_query):
     grp_id = int(callback_query.matches[0].group(1))
@@ -1404,7 +1404,7 @@ async def reset_group_callback(client, callback_query):
         [InlineKeyboardButton("🚫 ᴄʟᴏꜱᴇ", callback_data="close_data")]
     ]
     await callback_query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons), disable_web_page_preview=True)
-
+ 
 @Client.on_message(filters.command("verify") & filters.user(ADMINS))
 async def verify(bot, message):
     try:
@@ -1426,7 +1426,7 @@ async def verify(bot, message):
     except Exception as e:
         print(f"Error: {e}")
         await message.reply_text(f"Error: {e}")
-
+ 
 @Client.on_message(filters.command('set_fsub'))
 async def set_fsub(client, message):
     try:
@@ -1478,7 +1478,7 @@ async def set_fsub(client, message):
         err_text = f"⚠️ Error in set_fSub :\n{e}"
         logger.error(err_text)
         await client.send_message(LOG_API_CHANNEL, err_text)
-
+ 
 @Client.on_message(filters.private & filters.command("resetallgroup") & filters.user(ADMINS))
 async def reset_all_settings(client, message):
     try:
@@ -1493,7 +1493,7 @@ async def reset_all_settings(client, message):
             "<b>🚫 An error occurred while resetting group settings.\nPlease try again later.</b>",
             quote=True
         )
-
+ 
 @Client.on_message(filters.command("trial_reset"))
 async def reset_trial(client, message):
     user_id = message.from_user.id
@@ -1511,8 +1511,8 @@ async def reset_trial(client, message):
         await message.reply_text(message_text)
     except Exception as e:
         await message.reply_text(f"An error occurred: {e}")
-
-
+ 
+ 
 @Client.on_message(filters.command("play", prefixes=["/", "!"]) & (filters.group | filters.private))
 async def play_song(client, message):
     """
@@ -1530,3 +1530,27 @@ async def play_song(client, message):
     # plain-text message (auto_filter ignores messages starting with "/").
     message.text = query
     await auto_filter(client, message)
+ 
+ 
+@Client.on_message(
+    filters.group
+    & filters.text
+    & filters.regex(r"^@\S+\s+/play(?:@\S+)?\s+.+", re.IGNORECASE)
+)
+async def play_song_mentioned(client, message):
+    """
+    Handles the format: @YourBotUsername /play <song name>
+    i.e. bot mention FIRST, then the /play command and song name.
+    """
+    match = re.match(r"^@\S+\s+/play(?:@\S+)?\s+(.+)", message.text, re.IGNORECASE)
+    if not match:
+        return
+    query = match.group(1).strip()
+    if not query:
+        return await message.reply_text(
+            "🎵 Song ka naam bhi likho, jaise:\n`@{} /play Kesariya`".format(temp.U_NAME),
+            quote=True
+        )
+    message.text = query
+    await auto_filter(client, message)
+ 
