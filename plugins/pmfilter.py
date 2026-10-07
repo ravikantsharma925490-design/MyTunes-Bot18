@@ -22,6 +22,15 @@ import pytz
 from datetime import datetime, timedelta
 lock = asyncio.Lock()
  
+ 
+async def _auto_delete_sent_file(sent_msg, delay):
+    """Delete a file message that was sent directly into a group, after `delay` seconds."""
+    try:
+        await asyncio.sleep(delay)
+        await sent_msg.delete()
+    except Exception:
+        pass
+ 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
  
@@ -944,12 +953,15 @@ async def cb_handler(client: Client, query: CallbackQuery):
             if f_caption is None:
                 f_caption = f"{files.file_name}"
             try:
-                await client.send_cached_media(
+                sent_file_msg = await client.send_cached_media(
                     chat_id=query.message.chat.id,
                     file_id=file_id,
                     caption=f_caption,
                     protect_content=PROTECT_CONTENT,
                 )
+                settings = await get_settings(query.message.chat.id)
+                if settings.get('auto_delete', AUTO_DELETE):
+                    asyncio.create_task(_auto_delete_sent_file(sent_file_msg, DELETE_TIME))
             except Exception as e:
                 logger.exception(e)
                 await query.message.reply_text("❌ Fɪʟᴇ ʙʜᴇᴊɴᴇ ᴍᴇ́ɴ ᴇʀʀᴏʀ ᴀᴀʏᴀ.")
